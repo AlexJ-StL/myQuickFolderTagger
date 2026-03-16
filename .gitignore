@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+codebase_tags.csv
+test-project/
+test-project/README.md
