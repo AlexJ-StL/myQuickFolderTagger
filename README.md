@@ -38,7 +38,7 @@ Or install dependencies manually:
 ## Usage
 
 ```bash
-uv run tagger.py --path <path_to_codebase> --provider <provider_name> --model <model_name>
+uv run tagger.py --path <path_to_codebase_1> [path_2 ...] --provider <provider_name> --model <model_name>
 ```
 
 ### Examples
@@ -53,6 +53,12 @@ uv run tagger.py --path ../my-cool-project --provider google --model gemini-2.5-
 uv run tagger.py --path ../my-cool-project --provider ollama --model llama3
 ```
 
+**Batch / Recursive Scanning**
+Scan a folder containing multiple repositories:
+```bash
+uv run tagger.py --path ../Coding/Repos --recursive --provider openai --model gpt-4o
+```
+
 **OpenAI (Requires `OPENAI_API_KEY`)**
 ```bash
 uv run tagger.py --path ../my-cool-project --provider openai --model gpt-4o
@@ -65,7 +71,8 @@ uv run tagger.py --path ../my-cool-project --provider anthropic --model claude-3
 
 ### Options
 
-- `--path`: (Required) Path to the codebase you want to analyze. Must contain a README.md (case-insensitive).
+- `--path`: (Required) One or more paths to the codebases you want to analyze.
+- `--recursive`: (Optional) If set, the tool will recursively search all provided paths for any subdirectories containing a `README.md` and process them. Automatically skips common ignore folders like `node_modules`, `.venv`, etc.
 - `--provider`: (Required) One of `openai`, `anthropic`, `google`, `openrouter`, `ollama`, `lmstudio`.
 - `--model`: (Required) The LLM model name (e.g. gpt-4o, gemini-2.5-flash, llama3).
 - `--csv-path`: (Optional) The absolute or relative path to the CSV file where the tags will be saved. Defaults to `codebase_tags.csv` in the current directory.
