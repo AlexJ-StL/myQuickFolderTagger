@@ -6,3 +6,4 @@ codebase_tags.csv
 test-project/
 test-project/README.md
 .ruff_cache/
+.agent/
