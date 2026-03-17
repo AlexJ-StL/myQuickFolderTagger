@@ -54,9 +54,19 @@ uv run tagger.py --path ../my-cool-project --provider ollama --model llama3
 ```
 
 **Batch / Recursive Scanning**
-Scan a folder containing multiple repositories:
+Scan a folder containing multiple repositories (Defaults to max depth of 3). It will automatically skip any repositories that are already in `codebase_tags.csv` so you can safely stop and resume anytime:
 ```bash
 uv run tagger.py --path ../Coding/Repos --recursive --provider openai --model gpt-4o
+```
+
+Force re-analysis of all repositories, even if they've already been tagged:
+```bash
+uv run tagger.py --path ../Coding/Repos --recursive --force --provider openai --model gpt-4o
+```
+
+Scan infinitely through all subdirectories:
+```bash
+uv run tagger.py --path ../Coding/Repos --recursive --max-depth 0 --provider openai --model gpt-4o
 ```
 
 **OpenAI (Requires `OPENAI_API_KEY`)**
@@ -73,6 +83,8 @@ uv run tagger.py --path ../my-cool-project --provider anthropic --model claude-3
 
 - `--path`: (Required) One or more paths to the codebases you want to analyze.
 - `--recursive`: (Optional) If set, the tool will recursively search all provided paths for any subdirectories containing a `README.md` and process them. Automatically skips common ignore folders like `node_modules`, `.venv`, etc.
+- `--max-depth`: (Optional) When using `--recursive`, sets the maximum folder depth to crawl. Defaults to `3`. Set to `0` for infinite depth.
+- `--force`: (Optional) Force the LLM to re-analyze and re-tag repositories that have already been saved to the CSV index. By default, the tool skips already processed repos for blazing fast auto-resume.
 - `--provider`: (Required) One of `openai`, `anthropic`, `google`, `openrouter`, `ollama`, `lmstudio`.
 - `--model`: (Required) The LLM model name (e.g. gpt-4o, gemini-2.5-flash, llama3).
 - `--csv-path`: (Optional) The absolute or relative path to the CSV file where the tags will be saved. Defaults to `codebase_tags.csv` in the current directory.

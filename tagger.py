@@ -2,14 +2,14 @@ import argparse
 import sys
 import os
 from llm_client import analyze_readme
-from storage import save_tag
+from storage import save_tag, load_processed_repos
 
 IGNORED_DIRS = {
     "node_modules", ".venv", ".git", "__pycache__", "venv", "env",
     ".idea", ".vscode", "build", "dist", ".tox"
 }
 
-def find_repos(base_paths: list[str], recursive: bool) -> list[str]:
+def find_repos(base_paths: list[str], recursive: bool, max_depth: int) -> list[str]:
     """Finds all directories containing a README.md file."""
     repos = []
     
@@ -33,6 +33,20 @@ def find_repos(base_paths: list[str], recursive: bool) -> list[str]:
             
             if has_readme(root):
                 repos.append(root)
+
+            # Prevent os.walk from descending further if max_depth is reached
+            # max_depth 0 means infinite, otherwise calculate relative depth
+            if max_depth > 0:
+                rel_path = os.path.relpath(root, base_path)
+                
+                if rel_path == '.':
+                    current_depth = 0
+                else:
+                    # Count path separators or parts
+                    current_depth = rel_path.count(os.sep) + 1
+                    
+                if current_depth >= max_depth:
+                    dirs[:] = [] # Clear the list of directories to walk into
                 
     # Remove duplicates while preserving order
     return list(dict.fromkeys(repos))
@@ -50,7 +64,11 @@ def get_readme_path(directory: str) -> str | None:
             return path
     return None
 
-def process_repo(codebase_path: str, args, csv_path: str):
+def process_repo(codebase_path: str, args, csv_path: str, processed_repos: set[str]):
+    if not args.force and codebase_path in processed_repos:
+        print(f"[{codebase_path}] Skipping (already processed). Use --force to override.")
+        return
+
     readme_path = get_readme_path(codebase_path)
     if not readme_path:
         return
@@ -87,6 +105,8 @@ def main():
     parser = argparse.ArgumentParser(description="Codebase Tagger - Quickly identify and tag local codebases using an LLM")
     parser.add_argument("--path", type=str, nargs="+", required=True, help="One or more paths to the codebases or directories to analyze")
     parser.add_argument("--recursive", action="store_true", help="Recursively search for README.md files within the provided paths")
+    parser.add_argument("--max-depth", type=int, default=3, help="Maximum traversal depth for recursive searching. 0 = infinite. (Default: 3)")
+    parser.add_argument("--force", action="store_true", help="Force re-processing of repositories that have already been tagged in the CSV index")
     parser.add_argument("--csv-path", type=str, default=None, help="Path to the CSV index. Can also be set via TAGGER_CSV_PATH env var. Defaults to codebase_tags.csv in the current directory.")
     parser.add_argument("--provider", type=str, required=True, choices=["openai", "anthropic", "google", "openrouter", "ollama", "lmstudio"], help="LLM inference provider to use")
     parser.add_argument("--model", type=str, required=True, help="Specific model name (e.g. gpt-4o, gemini-2.5-flash)")
@@ -98,17 +118,20 @@ def main():
     csv_path = os.path.abspath(csv_path)
 
     # Find repositories
-    print("Searching for repositories...", end="", flush=True)
-    repos = find_repos(args.path, args.recursive)
+    print(f"Searching for repositories (max depth: {args.max_depth if args.max_depth > 0 else 'Infinite'})...", end="", flush=True)
+    repos = find_repos(args.path, args.recursive, args.max_depth)
     print(f" Found {len(repos)}.")
 
     if not repos:
         print("No repositories found to process.")
         sys.exit(0)
 
+    # Load previously processed repos to auto-resume
+    processed_repos = load_processed_repos(csv_path)
+
     # Process each repo
     for repo in repos:
-        process_repo(repo, args, csv_path)
+        process_repo(repo, args, csv_path, processed_repos)
 
 if __name__ == "__main__":
     main()
