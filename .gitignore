@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .env
 codebase_tags.csv
+everything-claude-code/
+everything-claude-code/bun.lock
+everything-claude-code/project.json
 test-project/
 test-project/README.md
 .ruff_cache/
